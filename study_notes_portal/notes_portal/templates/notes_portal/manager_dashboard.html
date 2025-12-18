@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="text-white">Manager Dashboard</h1>
+                <p class="text-white-50">
+                    <i class="fas fa-user me-1"></i>
+                    Welcome, {{ manager.username }}
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'home' %}" class="btn btn-outline-light me-2">
+                    <i class="fas fa-home me-1"></i>View Site
+                </a>
+                <a href="{% url 'manager_logout' %}" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Stats Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-folder fa-3x text-primary mb-3"></i>
+                <h3>{{ folders|length }}</h3>
+                <p class="text-muted mb-0">Total Folders</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+                {% with total_notes=0 %}
+                    {% for folder in folders %}
+                        {% with notes_count=folder.note_set.count %}
+                            {% with total_notes=total_notes|add:notes_count %}{% endwith %}
+                        {% endwith %}
+                    {% endfor %}
+                    <h3>{{ total_notes }}</h3>
+                {% endwith %}
+                <p class="text-muted mb-0">Total Notes</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-warning mb-3"></i>
+                <h3>{{ managers_count|default:"1" }}</h3>
+                <p class="text-muted mb-0">Managers</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-user-check fa-3x text-info mb-3"></i>
+                <h3>Online</h3>
+                <p class="text-muted mb-0">Status</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Create Folder Section -->
+    <div class="col-md-4 mb-4">
+        <div class="dashboard-card">
+            <h3 class="section-title">
+                <i class="fas fa-folder-plus me-2"></i>Create New Folder
+            </h3>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ folder_form.name.label_tag }}
+                    {{ folder_form.name }}
+                </div>
+                <button type="submit" name="create_folder" class="btn btn-primary w-100">
+                    <i class="fas fa-plus-circle me-1"></i>Create Folder
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Upload Note Section -->
+    <div class="col-md-4 mb-4">
+        <div class="dashboard-card">
+            <h3 class="section-title">
+                <i class="fas fa-upload me-2"></i>Upload Note
+            </h3>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ note_form.title.label_tag }}
+                    {{ note_form.title }}
+                </div>
+                <div class="mb-3">
+                    {{ note_form.folder.label_tag }}
+                    {{ note_form.folder }}
+                </div>
+                <div class="mb-3">
+                    {{ note_form.file.label_tag }}
+                    {{ note_form.file }}
+                    <div class="form-text">
+                        Supported formats: PDF, PPT, DOC, TXT (Max 50MB)
+                    </div>
+                </div>
+                <button type="submit" name="upload_note" class="btn btn-success w-100">
+                    <i class="fas fa-upload me-1"></i>Upload Note
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Delete Folder Section -->
+    <div class="col-md-4 mb-4">
+        <div class="dashboard-card">
+            <h3 class="section-title text-danger">
+                <i class="fas fa-trash-alt me-2"></i>Delete Folder
+            </h3>
+            <form method="POST" id="deleteForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="folder_id" class="form-label">Select Folder to Delete</label>
+                    <select name="folder_id" id="folder_id" class="form-control" required>
+                        <option value="">-- Select Folder --</option>
+                        {% for folder in folders %}
+                        <option value="{{ folder.id }}">
+                            {{ folder.name }} ({{ folder.note_set.count }} files)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This will permanently delete the folder and all files inside it!
+                </div>
+                <button type="submit" name="delete_folder" class="btn btn-danger w-100" 
+                        onclick="return confirmDelete()">
+                    <i class="fas fa-trash me-1"></i>Delete Folder
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Current Folders Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="dashboard-card">
+            <h3 class="section-title">
+                <i class="fas fa-list me-2"></i>Current Folders
+            </h3>
+            {% if folders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Folder Name</th>
+                                <th>Created By</th>
+                                <th>Created Date</th>
+                                <th>Files Count</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for folder in folders %}
+                            <tr>
+                                <td>
+                                    <i class="fas fa-folder text-warning me-2"></i>
+                                    <strong>{{ folder.name }}</strong>
+                                </td>
+                                <td>{{ folder.created_by.username }}</td>
+                                <td>{{ folder.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ folder.note_set.count }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'folder_detail' folder.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No folders created yet</h5>
+                    <p class="text-muted">Use the "Create New Folder" section above to add your first folder</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete() {
+    const folderSelect = document.getElementById('folder_id');
+    const folderName = folderSelect.options[folderSelect.selectedIndex].text;
+    
+    if (!folderSelect.value) {
+        alert('Please select a folder to delete');
+        return false;
+    }
+    
+    return confirm(`Are you sure you want to delete "${folderName}"?\n\nThis action cannot be undone!`);
+}
+</script>
+{% endblock %}
