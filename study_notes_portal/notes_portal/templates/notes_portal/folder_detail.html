@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ folder.name }} - Study Notes{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                <li class="breadcrumb-item active">{{ folder.name }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="text-white">{{ folder.name }}</h1>
+                <p class="text-white-50">
+                    <i class="far fa-calendar me-1"></i>
+                    Created: {{ folder.created_at|date:"F d, Y" }}
+                    <span class="mx-2">•</span>
+                    <i class="fas fa-user me-1"></i>
+                    By: {{ folder.created_by.username }}
+                </p>
+            </div>
+            <a href="{% url 'home' %}" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Folders
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="section-title">Study Notes</h2>
+                    <span class="badge bg-primary">{{ notes|length }} Files</span>
+                </div>
+                
+                {% if notes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Type</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for note in notes %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if note.file_type == 'pdf' %}
+                                            <i class="fas fa-file-pdf text-danger fa-lg me-3"></i>
+                                            {% elif note.file_type == 'ppt' %}
+                                            <i class="fas fa-file-powerpoint text-warning fa-lg me-3"></i>
+                                            {% elif note.file_type == 'doc' %}
+                                            <i class="fas fa-file-word text-primary fa-lg me-3"></i>
+                                            {% else %}
+                                            <i class="fas fa-file text-secondary fa-lg me-3"></i>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ note.title }}</strong>
+                                                <div class="text-muted small">
+                                                    {{ note.file.size|filesizeformat }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if note.file_type == 'pdf' %}
+                                        <span class="badge badge-pdf">PDF</span>
+                                        {% elif note.file_type == 'ppt' %}
+                                        <span class="badge badge-ppt">PPT</span>
+                                        {% elif note.file_type == 'doc' %}
+                                        <span class="badge badge-doc">DOC</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ note.file_type|upper }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ note.uploaded_by.username }}</td>
+                                    <td>{{ note.uploaded_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'download_note' note.id %}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-download me-1"></i>Download
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No notes available in this folder</h4>
+                        <p class="text-muted">Check back later or contact the manager</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
