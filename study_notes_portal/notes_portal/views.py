@@ -67,6 +67,14 @@ def manager_dashboard(request):
     manager = get_object_or_404(Manager, id=request.session['manager_id'])
     folders = Folder.objects.all()
     
+    # Calculate total notes
+    total_notes = 0
+    for folder in folders:
+        total_notes += folder.note_set.count()
+    
+    # Count total managers
+    managers_count = Manager.objects.count()
+    
     if request.method == 'POST':
         if 'create_folder' in request.POST:
             folder_form = FolderForm(request.POST)
@@ -105,13 +113,28 @@ def manager_dashboard(request):
             folder.delete()
             messages.success(request, f'Folder "{folder_name}" deleted successfully!')
             return redirect('manager_dashboard')
+        
+        # NEW: Delete single file
+        elif 'delete_file' in request.POST:
+            note_id = request.POST.get('note_id')
+            note = get_object_or_404(Note, id=note_id)
+            note_title = note.title
+            note.delete()
+            messages.success(request, f'File "{note_title}" deleted successfully!')
+            return redirect('manager_dashboard')
     
     folder_form = FolderForm()
     note_form = NoteForm()
     
+    # Get all notes for display
+    all_notes = Note.objects.all().order_by('-uploaded_at')
+    
     return render(request, 'notes_portal/manager_dashboard.html', {
         'manager': manager,
         'folders': folders,
+        'all_notes': all_notes,  # NEW: Send all notes to template
+        'total_notes': total_notes,  # NEW: Send calculated count
+        'managers_count': managers_count,  # NEW: Send managers count
         'folder_form': folder_form,
         'note_form': note_form,
     })
