@@ -26,12 +26,12 @@
 </div>
 
 <div class="row">
-    <!-- Stats Cards - FIXED -->
+    <!-- Stats Cards -->
     <div class="col-md-3 mb-4">
         <div class="card text-center">
             <div class="card-body">
                 <i class="fas fa-folder fa-3x text-primary mb-3"></i>
-                <h3>{{ folders|length }}</h3>
+                <h3>{{ all_folders|length }}</h3>
                 <p class="text-muted mb-0">Total Folders</p>
             </div>
         </div>
@@ -41,7 +41,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
-                <h3>{{ total_notes }}</h3>  <!-- FIXED: Now shows actual count -->
+                <h3>{{ total_notes }}</h3>
                 <p class="text-muted mb-0">Total Notes</p>
             </div>
         </div>
@@ -51,7 +51,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <i class="fas fa-users fa-3x text-warning mb-3"></i>
-                <h3>{{ managers_count }}</h3>  <!-- FIXED: Shows actual managers count -->
+                <h3>{{ managers_count }}</h3>
                 <p class="text-muted mb-0">Managers</p>
             </div>
         </div>
@@ -118,67 +118,81 @@
         </div>
     </div>
     
-    <!-- Delete Folder Section -->
+    <!-- Delete My Folder Section -->
     <div class="col-md-4 mb-4">
         <div class="dashboard-card">
             <h3 class="section-title text-danger">
-                <i class="fas fa-trash-alt me-2"></i>Delete Folder
+                <i class="fas fa-trash-alt me-2"></i>Delete My Folder
             </h3>
-            <form method="POST" id="deleteFolderForm">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label for="folder_id" class="form-label">Select Folder to Delete</label>
-                    <select name="folder_id" id="folder_id" class="form-control" required>
-                        <option value="">-- Select Folder --</option>
-                        {% for folder in folders %}
-                        <option value="{{ folder.id }}">
-                            {{ folder.name }} ({{ folder.note_set.count }} files)
-                        </option>
-                        {% endfor %}
-                    </select>
+            {% if my_folders %}
+                <form method="POST" id="deleteFolderForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="folder_id" class="form-label">Select Your Folder</label>
+                        <select name="folder_id" id="folder_id" class="form-control" required>
+                            <option value="">-- Select Your Folder --</option>
+                            {% for folder in my_folders %}
+                            <option value="{{ folder.id }}">
+                                {{ folder.name }} ({{ folder.note_set.count }} files)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This will delete folder and ALL files inside!
+                    </div>
+                    <button type="submit" name="delete_folder" class="btn btn-danger w-100" 
+                            onclick="return confirmDeleteFolder()">
+                        <i class="fas fa-trash me-1"></i>Delete Folder
+                    </button>
+                </form>
+            {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-folder-open fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">You haven't created any folders</p>
                 </div>
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Warning:</strong> This will permanently delete the folder and ALL files inside it!
-                </div>
-                <button type="submit" name="delete_folder" class="btn btn-danger w-100" 
-                        onclick="return confirmDeleteFolder()">
-                    <i class="fas fa-trash me-1"></i>Delete Folder
-                </button>
-            </form>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- NEW: Delete Individual File Section -->
+<!-- Delete My File Section -->
 <div class="row mt-4">
     <div class="col-md-6 mb-4">
         <div class="dashboard-card">
-            <h3 class="section-title text-danger">
-                <i class="fas fa-file-times me-2"></i>Delete Individual File
+            <h3 class="section-title text-warning">
+                <i class="fas fa-file-times me-2"></i>Delete My File
             </h3>
-            <form method="POST" id="deleteFileForm">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label for="note_id" class="form-label">Select File to Delete</label>
-                    <select name="note_id" id="note_id" class="form-control" required>
-                        <option value="">-- Select File --</option>
-                        {% for note in all_notes %}
-                        <option value="{{ note.id }}">
-                            {{ note.title }} ({{ note.file_type|upper }} in {{ note.folder.name }})
-                        </option>
-                        {% endfor %}
-                    </select>
+            {% if my_notes %}
+                <form method="POST" id="deleteFileForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="note_id" class="form-label">Select Your File</label>
+                        <select name="note_id" id="note_id" class="form-control" required>
+                            <option value="">-- Select Your File --</option>
+                            {% for note in my_notes %}
+                            <option value="{{ note.id }}">
+                                {{ note.title }} ({{ note.file_type|upper }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>Note:</strong> This will delete only the selected file.
+                    </div>
+                    <button type="submit" name="delete_file" class="btn btn-warning w-100" 
+                            onclick="return confirmDeleteFile()">
+                        <i class="fas fa-trash-alt me-1"></i>Delete File
+                    </button>
+                </form>
+            {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-file-alt fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">You haven't uploaded any files</p>
                 </div>
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <strong>Note:</strong> This will delete only the selected file, not the entire folder.
-                </div>
-                <button type="submit" name="delete_file" class="btn btn-warning w-100" 
-                        onclick="return confirmDeleteFile()">
-                    <i class="fas fa-trash-alt me-1"></i>Delete File
-                </button>
-            </form>
+            {% endif %}
         </div>
     </div>
     
@@ -188,28 +202,31 @@
             <h3 class="section-title">
                 <i class="fas fa-list me-2"></i>Current Folders
             </h3>
-            {% if folders %}
+            {% if all_folders %}
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
                                 <th>Folder Name</th>
-                                <th>Files Count</th>
                                 <th>Created By</th>
+                                <th>Files</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for folder in folders %}
+                            {% for folder in all_folders %}
                             <tr>
                                 <td>
                                     <i class="fas fa-folder text-warning me-2"></i>
                                     <strong>{{ folder.name }}</strong>
+                                    {% if folder.created_by == manager %}
+                                    <span class="badge bg-success ms-2">Yours</span>
+                                    {% endif %}
                                 </td>
+                                <td>{{ folder.created_by.username }}</td>
                                 <td>
                                     <span class="badge bg-info">{{ folder.note_set.count }}</span>
                                 </td>
-                                <td>{{ folder.created_by.username }}</td>
                                 <td>
                                     <a href="{% url 'folder_detail' folder.id %}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye me-1"></i>View
@@ -231,7 +248,7 @@
     </div>
 </div>
 
-<!-- NEW: All Files List Section -->
+<!-- All Files List Section -->
 <div class="row mt-4">
     <div class="col-12">
         <div class="dashboard-card">
@@ -265,6 +282,9 @@
                                     <i class="fas fa-file text-secondary me-2"></i>
                                     {% endif %}
                                     <strong>{{ note.title }}</strong>
+                                    {% if note.uploaded_by == manager %}
+                                    <span class="badge bg-success ms-2">Yours</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if note.file_type == 'pdf' %}
@@ -284,10 +304,16 @@
                                     <a href="{% url 'download_note' note.id %}" class="btn btn-sm btn-success me-1">
                                         <i class="fas fa-download"></i>
                                     </a>
+                                    {% if note.uploaded_by == manager %}
                                     <button class="btn btn-sm btn-danger" 
                                             onclick="deleteFileById('{{ note.id }}', '{{ note.title }}')">
                                         <i class="fas fa-trash"></i>
                                     </button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-secondary disabled" title="Can't delete other's files">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -301,6 +327,55 @@
                     <p class="text-muted">Use the "Upload Note" section above to add files</p>
                 </div>
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Your Content Summary -->
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="dashboard-card">
+            <h3 class="section-title">
+                <i class="fas fa-user-circle me-2"></i>Your Content Summary
+            </h3>
+            <div class="row text-center">
+                <div class="col-6">
+                    <div class="p-3">
+                        <h2 class="text-primary">{{ my_folders|length }}</h2>
+                        <p class="text-muted mb-0">Your Folders</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3">
+                        <h2 class="text-success">{{ my_notes|length }}</h2>
+                        <p class="text-muted mb-0">Your Files</p>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Permission Note:</strong> You can only delete folders and files that you created.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-md-6 mb-4">
+        <div class="dashboard-card">
+            <h3 class="section-title">
+                <i class="fas fa-bolt me-2"></i>Quick Actions
+            </h3>
+            <div class="d-grid gap-2">
+                <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-globe me-2"></i>View Public Site
+                </a>
+                <button class="btn btn-outline-success" onclick="document.getElementById('upload-section').scrollIntoView()">
+                    <i class="fas fa-upload me-2"></i>Upload New File
+                </button>
+                <button class="btn btn-outline-warning" onclick="document.getElementById('delete-file-section').scrollIntoView()">
+                    <i class="fas fa-trash-alt me-2"></i>Delete My Files
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -330,13 +405,10 @@ function confirmDeleteFile() {
     return confirm(`⚠️ DELETE CONFIRMATION\n\nAre you sure you want to delete:\n"${fileName}"?\n\nThis action cannot be undone!`);
 }
 
-// NEW: Quick delete function for file list
 function deleteFileById(noteId, fileName) {
-    if (confirm(`Delete file "${fileName}"?`)) {
-        // Create a hidden form and submit it
+    if (confirm(`Delete your file "${fileName}"?`)) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '';
         
         const csrf = document.createElement('input');
         csrf.type = 'hidden';
@@ -360,5 +432,16 @@ function deleteFileById(noteId, fileName) {
         form.submit();
     }
 }
+
+// Add IDs to sections for quick navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Add ID to upload section
+    const uploadSection = document.querySelector('.row > .col-md-4:nth-child(2)');
+    if (uploadSection) uploadSection.id = 'upload-section';
+    
+    // Add ID to delete file section
+    const deleteFileCard = document.querySelector('.row.mt-4 .col-md-6:first-child');
+    if (deleteFileCard) deleteFileCard.id = 'delete-file-section';
+});
 </script>
 {% endblock %}

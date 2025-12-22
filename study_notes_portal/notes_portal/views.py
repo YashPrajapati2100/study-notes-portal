@@ -65,12 +65,17 @@ def manager_dashboard(request):
         return redirect('manager_login')
     
     manager = get_object_or_404(Manager, id=request.session['manager_id'])
-    folders = Folder.objects.all()
+    
+    # Get folders created by this manager only for delete dropdown
+    my_folders = Folder.objects.filter(created_by=manager)
+    all_folders = Folder.objects.all()  # For viewing all folders
+    
+    # Get notes uploaded by this manager only for delete dropdown
+    my_notes = Note.objects.filter(uploaded_by=manager)
+    all_notes = Note.objects.all()  # For viewing all notes
     
     # Calculate total notes
-    total_notes = 0
-    for folder in folders:
-        total_notes += folder.note_set.count()
+    total_notes = Note.objects.count()
     
     # Count total managers
     managers_count = Manager.objects.count()
@@ -108,33 +113,37 @@ def manager_dashboard(request):
         
         elif 'delete_folder' in request.POST:
             folder_id = request.POST.get('folder_id')
-            folder = get_object_or_404(Folder, id=folder_id)
-            folder_name = folder.name
-            folder.delete()
-            messages.success(request, f'Folder "{folder_name}" deleted successfully!')
+            try:
+                folder = Folder.objects.get(id=folder_id, created_by=manager)
+                folder_name = folder.name
+                folder.delete()
+                messages.success(request, f'Folder "{folder_name}" deleted successfully!')
+            except Folder.DoesNotExist:
+                messages.error(request, 'You can only delete folders you created!')
             return redirect('manager_dashboard')
         
-        # NEW: Delete single file
         elif 'delete_file' in request.POST:
             note_id = request.POST.get('note_id')
-            note = get_object_or_404(Note, id=note_id)
-            note_title = note.title
-            note.delete()
-            messages.success(request, f'File "{note_title}" deleted successfully!')
+            try:
+                note = Note.objects.get(id=note_id, uploaded_by=manager)
+                note_title = note.title
+                note.delete()
+                messages.success(request, f'File "{note_title}" deleted successfully!')
+            except Note.DoesNotExist:
+                messages.error(request, 'You can only delete files you uploaded!')
             return redirect('manager_dashboard')
     
     folder_form = FolderForm()
     note_form = NoteForm()
     
-    # Get all notes for display
-    all_notes = Note.objects.all().order_by('-uploaded_at')
-    
     return render(request, 'notes_portal/manager_dashboard.html', {
         'manager': manager,
-        'folders': folders,
-        'all_notes': all_notes,  # NEW: Send all notes to template
-        'total_notes': total_notes,  # NEW: Send calculated count
-        'managers_count': managers_count,  # NEW: Send managers count
+        'my_folders': my_folders,      # For delete dropdowns
+        'all_folders': all_folders,    # For viewing all
+        'my_notes': my_notes,          # For delete dropdowns
+        'all_notes': all_notes,        # For viewing all
+        'total_notes': total_notes,
+        'managers_count': managers_count,
         'folder_form': folder_form,
         'note_form': note_form,
     })
