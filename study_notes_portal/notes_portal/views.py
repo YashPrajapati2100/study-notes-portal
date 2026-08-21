@@ -113,24 +113,73 @@ def manager_dashboard(request):
         
         elif 'delete_folder' in request.POST:
             folder_id = request.POST.get('folder_id')
+
             try:
-                folder = Folder.objects.get(id=folder_id, created_by=manager)
+                folder = Folder.objects.get(
+                id=folder_id,
+                created_by=manager
+                )
+
                 folder_name = folder.name
+
+                # Get all notes/files inside this folder
+                notes = Note.objects.filter(folder=folder)
+
+                # Delete physical files from media/notes/
+                for note in notes:
+                    if note.file:
+                        file_path = note.file.path
+
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+
+                # Delete all Note records
+                notes.delete()
+
+                # Delete the Folder record
                 folder.delete()
-                messages.success(request, f'Folder "{folder_name}" deleted successfully!')
+
+                messages.success(
+                request,
+                f'Folder "{folder_name}" and all its files deleted successfully!'
+                )
+
             except Folder.DoesNotExist:
-                messages.error(request, 'You can only delete folders you created!')
+                messages.error(
+                request,
+                'You can only delete folders you created!')
+
             return redirect('manager_dashboard')
         
         elif 'delete_file' in request.POST:
             note_id = request.POST.get('note_id')
+
             try:
                 note = Note.objects.get(id=note_id, uploaded_by=manager)
+
                 note_title = note.title
+
+                # Get physical file path
+                file_path = note.file.path
+
+                # Delete physical file from media/notes/
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+
+                # Delete database record
                 note.delete()
-                messages.success(request, f'File "{note_title}" deleted successfully!')
+
+                messages.success(
+                    request,
+                    f'File "{note_title}" deleted successfully!'
+                )
+
             except Note.DoesNotExist:
-                messages.error(request, 'You can only delete files you uploaded!')
+                messages.error(
+                    request,
+                    'You can only delete files you uploaded!'
+                )
+
             return redirect('manager_dashboard')
     
     folder_form = FolderForm()
